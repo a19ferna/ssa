@@ -48,13 +48,9 @@ class WassersteinNoBin():
         if len(set(x_ssa_test)) > len(self.sens_val):
             raise ValueError(
                 'x_ssa_test should have at most the number of modalities in x_ssa_calib')
-
-        if {self.sens_val_0, self.sens_val_1} != set(x_ssa_test):
-            raise ValueError(
-                'x_ssa_test and x_ssa_calib should have the same modalities')
         
         sens_val_test = list(set(x_ssa_test))
-        if all(elem in self.sens_val for elem in sens_val_test):
+        if not all(elem in self.sens_val for elem in sens_val_test):
             raise ValueError(
                 'Modalities in x_ssa_test should be included in modalities of x_ssa_calib')
         
@@ -64,7 +60,7 @@ class WassersteinNoBin():
         for mod1 in sens_val_test:
             sens_loc[mod1] = np.where(x_ssa_test == mod1)[0]
             for mod2 in sens_val_test:
-                y_fair[sens_loc[mod1]] += self.weights(mod2) * \
+                y_fair[sens_loc[mod1]] += self.weights[mod2] * \
                     self.eqf[mod2](self.ecdf[mod1](y_test[sens_loc[mod1]]+eps[sens_loc[mod1]]))
 
         return y_fair
