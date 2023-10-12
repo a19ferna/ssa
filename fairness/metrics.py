@@ -13,10 +13,21 @@ def diff_quantile(data1, data2):
 
 
 def unfairness(y_fair, x_ssa_test):
-    sens_val = list(set(x_ssa_test))
-    data1 = y_fair
-    lst_unfairness = []
-    for mod in sens_val:
-        data2 = y_fair[x_ssa_test == mod]
-        lst_unfairness.append(diff_quantile(data1, data2))
-    return max(lst_unfairness)
+    new_list = []
+    for sens in x_ssa_test.T:
+        sens_val = list(set(sens))
+        data1 = y_fair
+        lst_unfairness = []
+        for mod in sens_val:
+            data2 = y_fair[sens == mod]
+            lst_unfairness.append(diff_quantile(data1, data2))
+        new_list.append(max(lst_unfairness))
+    return max(new_list)
+
+
+def unfairness_multi(y_fair_dict, x_ssa_test):
+    unfairness_dict = {}
+    for i, y_fair in enumerate(y_fair_dict.values()):
+        result = unfairness(y_fair, x_ssa_test)
+        unfairness_dict[f'sens_var_{i}'] = result
+    return unfairness_dict
