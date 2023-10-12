@@ -15,13 +15,13 @@ class BaseHelper():
 
     def _check_shape(y, x_ssa):
         if not isinstance(x_ssa, np.ndarray):
-            raise ValueError('x_ssa_calib must be an array')
+            raise ValueError('x_ssa must be an array')
 
         if not isinstance(y, np.ndarray):
-            raise ValueError('y_calib must be an array')
+            raise ValueError('y must be an array')
 
         if len(x_ssa) != len(y):
-            raise ValueError('x_ssa_calib and y should have the same length')
+            raise ValueError('x_ssa and y should have the same length')
 
     def _check_mod(sens_val_calib, sens_val_test):
         if sens_val_test > sens_val_calib:
@@ -31,6 +31,11 @@ class BaseHelper():
         if not all(elem in sens_val_calib for elem in sens_val_test):
             raise ValueError(
                 'Modalities in x_ssa_test should be included in modalities of x_ssa_calib')
+    
+    def _check_epsilon(epsilon):
+        if epsilon<0 or epsilon>1:
+            raise ValueError(
+                'epsilon must be between 0 and 1')
 
     def _get_mod(self, x_ssa):
         return list(set(x_ssa))
@@ -75,6 +80,7 @@ class WassersteinNoBin(BaseHelper):
 
     def transform(self, y_test, x_ssa_test, epsilon=0):
 
+        BaseHelper._check_epsilon(epsilon)
         BaseHelper._check_shape(y_test, x_ssa_test)
         sens_val_test = BaseHelper._get_mod(self, x_ssa_test)
         BaseHelper._check_mod(self.sens_val_calib, sens_val_test)
@@ -103,6 +109,11 @@ class MultiWasserStein(WassersteinNoBin):
 
         self.eqf_all = {}
         self.ecdf_all = {}
+    
+    def _check_epsilon_size(epsilon, x_ssa_test):
+        if len(epsilon) != len(x_ssa_test):
+            raise ValueError(
+                'epsilon must have the same length than the number of sensitive features')
 
     def fit(self, y_calib, x_ssa_calib):
         for i, sens in enumerate(x_ssa_calib.T):
@@ -121,6 +132,7 @@ class MultiWasserStein(WassersteinNoBin):
     def transform(self, y_test, x_ssa_test, epsilon=None):
         if epsilon == None :
             epsilon = [0]*len(x_ssa_test)
+        self._check_epsilon_size(epsilon, x_ssa_test)
         for i, sens in enumerate(x_ssa_test.T):
             wasserstein_instance = WassersteinNoBin(sigma=self.sigma)
             if i == 0:
