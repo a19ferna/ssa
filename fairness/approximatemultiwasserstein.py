@@ -110,8 +110,8 @@ class MultiWasserStein(WassersteinNoBin):
         self.eqf_all = {}
         self.ecdf_all = {}
     
-    def _check_epsilon_size(epsilon, x_ssa_test):
-        if len(epsilon) != len(x_ssa_test):
+    def _check_epsilon_size(self, epsilon, x_ssa_test):
+        if len(epsilon) != len(x_ssa_test.T):
             raise ValueError(
                 'epsilon must have the same length than the number of sensitive features')
 
@@ -131,7 +131,7 @@ class MultiWasserStein(WassersteinNoBin):
 
     def transform(self, y_test, x_ssa_test, epsilon=None):
         if epsilon == None :
-            epsilon = [0]*len(x_ssa_test)
+            epsilon = [0]*len(x_ssa_test.T)
         self._check_epsilon_size(epsilon, x_ssa_test)
         for i, sens in enumerate(x_ssa_test.T):
             wasserstein_instance = WassersteinNoBin(sigma=self.sigma)
