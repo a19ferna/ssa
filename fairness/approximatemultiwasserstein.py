@@ -133,6 +133,9 @@ class MultiWasserStein(WassersteinNoBin):
         if epsilon == None:
             epsilon = [0]*len(x_ssa_test.T)
         self._check_epsilon_size(epsilon, x_ssa_test)
+
+        self.y_fair_test['Base model'] = y_test
+
         for i, sens in enumerate(x_ssa_test.T):
             wasserstein_instance = WassersteinNoBin(sigma=self.sigma)
             if i == 0:
