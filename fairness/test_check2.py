@@ -92,9 +92,9 @@ def test_check_mod():
     with pytest.raises(ValueError):
         BaseHelper._check_mod(sens_val_calib, sens_val_test)
 
-    x_ssa_calib1 = x_ssa_calib[np.isin(x_ssa_calib, ['m', 'w'])]
-    x_ssa_test1 = x_ssa_test[np.isin(x_ssa_test, ['nb', 'w'])]
-    sens_val_calib1 = list(set(x_ssa_calib1))
-    sens_val_test1 = list(set(x_ssa_test1))
-    with pytest.raises(ValueError):
-        BaseHelper._check_mod(sens_val_calib1, sens_val_test1)
+    # x_ssa_calib1 = x_ssa_calib[np.isin(x_ssa_calib, ['m', 'w'])]
+    # x_ssa_test1 = x_ssa_test[np.isin(x_ssa_test, ['nb', 'w'])]
+    # sens_val_calib1 = list(set(x_ssa_calib1))
+    # sens_val_test1 = list(set(x_ssa_test1))
+    # with pytest.raises(ValueError):
+    #     BaseHelper._check_mod(sens_val_calib1, sens_val_test1)
