@@ -12,13 +12,13 @@ class BaseHelper():
 
     def _check_shape(y, x_ssa):
         if not isinstance(x_ssa, np.ndarray):
-            raise ValueError('x_ssa_calib must be an array')
+            raise ValueError('x_ssa must be an array')
 
         if not isinstance(y, np.ndarray):
-            raise ValueError('y_calib must be an array')
+            raise ValueError('y must be an array')
 
         if len(x_ssa) != len(y):
-            raise ValueError('x_ssa_calib and y should have the same length')
+            raise ValueError('x_ssa and y should have the same length')
 
     def _check_mod(sens_val_calib, sens_val_test):
         if sens_val_test > sens_val_calib:
