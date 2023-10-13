@@ -24,10 +24,6 @@ class BaseHelper():
             raise ValueError('x_ssa and y should have the same length')
 
     def _check_mod(sens_val_calib, sens_val_test):
-        if len(sens_val_test) > len(sens_val_calib):
-            raise ValueError(
-                'x_ssa_test should have at most the number of modalities in x_ssa_calib')
-
         if not all(elem in sens_val_calib for elem in sens_val_test):
             raise ValueError(
                 'Modalities in x_ssa_test should be included in modalities of x_ssa_calib')
