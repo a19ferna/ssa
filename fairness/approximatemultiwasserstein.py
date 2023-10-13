@@ -23,6 +23,10 @@ class BaseHelper():
         if len(x_ssa) != len(y):
             raise ValueError('x_ssa and y should have the same length')
 
+        for el in y:
+            if not isinstance(el, float):
+                raise ValueError('y should contain only float numbers')
+
     def _check_mod(sens_val_calib, sens_val_test):
         if sens_val_test > sens_val_calib:
             raise ValueError(
@@ -31,9 +35,9 @@ class BaseHelper():
         if not all(elem in sens_val_calib for elem in sens_val_test):
             raise ValueError(
                 'Modalities in x_ssa_test should be included in modalities of x_ssa_calib')
-    
+
     def _check_epsilon(epsilon):
-        if epsilon<0 or epsilon>1:
+        if epsilon < 0 or epsilon > 1:
             raise ValueError(
                 'epsilon must be between 0 and 1')
 
@@ -109,7 +113,7 @@ class MultiWasserStein(WassersteinNoBin):
 
         self.eqf_all = {}
         self.ecdf_all = {}
-    
+
     def _check_epsilon_size(self, epsilon, x_ssa_test):
         if len(epsilon) != len(x_ssa_test.T):
             raise ValueError(
@@ -130,7 +134,7 @@ class MultiWasserStein(WassersteinNoBin):
             y_calib_inter = wasserstein_instance.transform(y_calib_inter, sens)
 
     def transform(self, y_test, x_ssa_test, epsilon=None):
-        if epsilon == None :
+        if epsilon == None:
             epsilon = [0]*len(x_ssa_test.T)
         self._check_epsilon_size(epsilon, x_ssa_test)
         for i, sens in enumerate(x_ssa_test.T):
@@ -142,6 +146,7 @@ class MultiWasserStein(WassersteinNoBin):
             wasserstein_instance.weights = self.weights_all[f'sens_var_{i+1}']
             wasserstein_instance.eqf = self.eqf_all[f'sens_var_{i+1}']
             wasserstein_instance.ecdf = self.ecdf_all[f'sens_var_{i+1}']
-            y_test_inter = wasserstein_instance.transform(y_test_inter, sens, epsilon[i])
+            y_test_inter = wasserstein_instance.transform(
+                y_test_inter, sens, epsilon[i])
             self.y_fair_test[f'sens_var_{i+1}'] = y_test_inter
         return self.y_fair_test[f'sens_var_{i+1}']
