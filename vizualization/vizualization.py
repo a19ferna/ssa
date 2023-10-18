@@ -348,3 +348,46 @@ def waterfall_plot(unfs_list_of_dict):
             bar_kwargs=bar_kwargs,
             line_kwargs=line_kwargs,
             color_kwargs=color_kwargs)
+
+
+def arrow_plot(unfs_dict, risks_dict):
+    x = []
+    y = []
+    sens = []
+
+    for key in unfs_dict.keys():
+        x.append(unfs_dict[key])
+
+    for key in risks_dict.keys():
+        y.append(risks_dict[key])
+
+    for i in range(len(unfs_dict)):
+        sens.append(i+1)
+
+    fig, ax = plt.subplots()
+    line = ax.plot(x, y, linestyle="--", alpha=0.25, color="grey")[0]
+    for i in range(len(x)):
+        if i == 0:
+            line.axes.annotate(f"Base\nmodel", xytext=(
+                x[0]+np.min(x)/20, y[0]), xy=(x[0], y[0]), size=10)
+            ax.scatter(x[0], y[0], label="Base model", marker="^", s=100)
+        elif i == len(x)-1:
+            label = f"$A_{1:{len(unfs_dict)}}$-fair"
+            line.axes.annotate(label, xytext=(
+                x[i]+np.min(x)/20, y[i]), xy=(x[i], y[i]), size=10)
+            ax.scatter(x[i], y[i], label=label, marker="*", s=150)
+        elif i == 1:
+            label = f"$A_{sens[0]}$-fair"
+            line.axes.annotate(label, xytext=(
+                x[i]+np.min(x)/20, y[i]), xy=(x[i], y[i]), size=10)
+            ax.scatter(x[i], y[i], label=label, marker="+", s=150)
+
+    ax.set_xlabel("Unfairness")
+    ax.set_ylabel("Risk")
+    ax.set_xlim((np.min(x)-np.min(x)/10-np.max(x)/10,
+                np.max(x)+np.min(x)/10+np.max(x)/10))
+    ax.set_ylim((np.min(y)-np.min(y)/10-np.max(y)/10,
+                np.max(y)+np.min(y)/10+np.max(y)/10))
+    ax.set_title("Exact fairness")
+    ax.legend(loc="best")
+    plt.show()

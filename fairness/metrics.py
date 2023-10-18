@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.metrics import accuracy_score, mean_squared_error
 
 
 def diff_quantile(data1, data2):
@@ -31,3 +32,16 @@ def unfairness_multi(y_fair_dict, x_ssa_test):
         result = unfairness(y_fair, x_ssa_test)
         unfairness_dict[f'sens_var_{i}'] = result
     return unfairness_dict
+
+
+def risk(y_true, y_fair, classif=False):
+    if classif:
+        return accuracy_score(y_true, y_fair)
+    else:
+        return mean_squared_error(y_true, y_fair)
+
+
+def risk_multi(y_true, y_fair_dict, classif=False):
+    risk_dict = {}
+    for key in y_fair_dict.keys():
+        risk_dict[key] = risk(y_true, list(y_fair_dict[key].values()), classif)
