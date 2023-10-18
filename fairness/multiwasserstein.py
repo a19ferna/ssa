@@ -131,3 +131,6 @@ class MultiWasserStein(WassersteinNoBin):
             y_test_inter = wasserstein_instance.transform(y_test_inter, sens)
             self.y_fair_test[f'sens_var_{i+1}'] = y_test_inter
         return self.y_fair_test[f'sens_var_{i+1}']
+
+    def get_sequential_fairness(self):
+        return self.y_fair_test

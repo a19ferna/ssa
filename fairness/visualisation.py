@@ -2,6 +2,50 @@ import numpy as np
 import pandas as pd
 from copy import copy
 import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+def viz_fairness_distrib(y_fair_test, x_ssa_test):
+    plt.figure(figsize=(12, 9))
+    n_a = len(x_ssa_test.T)
+    n_m = 1
+
+    for key in y_fair_test.keys():
+        title = None
+        df_test = pd.DataFrame()
+        for i, sens in enumerate(x_ssa_test.T):
+            df_test[f"sensitive_feature_{i+1}"] = sens
+
+        df_test['Prediction'] = y_fair_test[key]
+        if key == 'Base model':
+            for i in range(len(x_ssa_test.T)):
+                title = key
+                plt.subplot(n_a, n_m + 1, i * (n_m+1) + 1)
+                modalities = df_test[f'sensitive_feature_{i+1}'].unique()
+                for mod in modalities:
+                    subset_data = df_test[df_test[f'sensitive_feature_{i+1}'] == mod]
+                    sns.kdeplot(
+                        subset_data['Prediction'], label=f'sensitive_feature_{i+1}: {mod}', fill=True, alpha=0.2)
+                plt.legend()
+                plt.title(title, fontsize=11)
+
+        else:
+            for i in range(len(x_ssa_test.T)):
+                if key == f'sens_var_{i+1}':
+                    title = key
+                    plt.subplot(n_a, n_m + 1, i * (n_m+1) + 2)
+                    modalities = df_test[f'sensitive_feature_{i+1}'].unique()
+                    for mod in modalities:
+                        subset_data = df_test[df_test[f'sensitive_feature_{i+1}'] == mod]
+                        sns.kdeplot(
+                            subset_data['Prediction'], label=f'sensitive_feature_{i+1}: {mod}', fill=True, alpha=0.2)
+                        plt.legend()
+                    plt.title(title, fontsize=11)
+
+    # Set plot labels and title
+    plt.xlabel('Prediction')
+    plt.ylabel('Density')
+
 
 # Adapted from: https://github.com/microsoft/waterfall_ax/blob/main/waterfall_ax/waterfall_ax.py
 class WaterfallChart():
@@ -10,7 +54,7 @@ class WaterfallChart():
     The plot_waterfall() function returns an Axes object. So it’s very flexible to use the object outside the class for further editing.
     '''
 
-    def __init__(self, step_values, step_values_exact_fair = None, step_names=[], metric_name='', last_step_label=''):
+    def __init__(self, step_values, step_values_exact_fair=None, step_names=[], metric_name='', last_step_label=''):
         '''
         step_values [list]: the cumulative values for each step.
         step_names [list]: (optional) the corresponding labels for each step. Default is []. If [], Labels will be assigned as 'Step_i' based on the order of step_values.
@@ -20,12 +64,13 @@ class WaterfallChart():
         '''
         self.step_values = step_values
         self.step_values_exact_fair = step_values_exact_fair
-        self.step_names = step_names if len(step_names)>0 else ['Step_{0}'.format(x+1) for x in range(len(step_values))] 
-        self.metric_col = metric_name if metric_name!='' else 'Value'
+        self.step_names = step_names if len(step_names) > 0 else [
+            'Step_{0}'.format(x+1) for x in range(len(step_values))]
+        self.metric_col = metric_name if metric_name != '' else 'Value'
         self.delta_col = 'delta'
-        self.base_col = 'base'        
-        self.last_step_label = last_step_label if last_step_label!='' else 'Final Value'
-        
+        self.base_col = 'base'
+        self.last_step_label = last_step_label if last_step_label != '' else 'Final Value'
+
     def plot_waterfall(self, ax=None, figsize=(10, 5), title='', bar_labels=True,
                        color_kwargs={}, bar_kwargs={}, line_kwargs={}):
         '''
@@ -54,7 +99,8 @@ class WaterfallChart():
         ax.set_xlim(-0.5, len(df_plot)-0.5)
         ax.set_ylim(0, df_plot[self.metric_col].max()*1.2)
         if self.step_values_exact_fair is not None:
-            y_max = max(df_plot[self.metric_col].max()*1.2, self.df_plot_exact_fair[self.metric_col].max()*1.2)
+            y_max = max(df_plot[self.metric_col].max()*1.2,
+                        self.df_plot_exact_fair[self.metric_col].max()*1.2)
             ax.set_ylim(0, y_max)
         ax.set_ylabel(self.metric_col)
         ax.set_title(title, fontsize=12)
@@ -65,25 +111,32 @@ class WaterfallChart():
         Take the input values and create a dataframe for plotting
         '''
         # Create a table for plotting
-        step_deltas = list(pd.Series(self.step_values).diff().fillna(pd.Series(self.step_values)).values)
+        step_deltas = list(pd.Series(self.step_values).diff().fillna(
+            pd.Series(self.step_values)).values)
         df_plot = pd.DataFrame(
-            [self.step_values+[self.step_values[-1]], step_deltas+[self.step_values[-1]]],
-            columns = self.step_names + [self.last_step_label], 
-            index = [self.metric_col, self.delta_col]).transpose()
+            [self.step_values+[self.step_values[-1]],
+                step_deltas+[self.step_values[-1]]],
+            columns=self.step_names + [self.last_step_label],
+            index=[self.metric_col, self.delta_col]).transpose()
         # Add base values
         df_plot[self.base_col] = df_plot[self.metric_col].shift(1).fillna(0)
-        df_plot[self.base_col] = list(df_plot[self.base_col].values[0:-1]) + [0]
+        df_plot[self.base_col] = list(
+            df_plot[self.base_col].values[0:-1]) + [0]
         if self.step_values_exact_fair is not None:
-            step_deltas_exact_fair = list(pd.Series(self.step_values_exact_fair).diff().fillna(pd.Series(self.step_values_exact_fair)).values)
+            step_deltas_exact_fair = list(pd.Series(self.step_values_exact_fair).diff(
+            ).fillna(pd.Series(self.step_values_exact_fair)).values)
             self.df_plot_exact_fair = pd.DataFrame(
-                [self.step_values_exact_fair+[self.step_values_exact_fair[-1]], step_deltas_exact_fair+[self.step_values_exact_fair[-1]]],
-                columns = self.step_names + [self.last_step_label], 
-                index = [self.metric_col, self.delta_col]).transpose()
+                [self.step_values_exact_fair+[self.step_values_exact_fair[-1]],
+                    step_deltas_exact_fair+[self.step_values_exact_fair[-1]]],
+                columns=self.step_names + [self.last_step_label],
+                index=[self.metric_col, self.delta_col]).transpose()
             # Add base values
-            self.df_plot_exact_fair[self.base_col] = self.df_plot_exact_fair[self.metric_col].shift(1).fillna(0)
-            self.df_plot_exact_fair[self.base_col] = list(self.df_plot_exact_fair[self.base_col].values[0:-1]) + [0] 
+            self.df_plot_exact_fair[self.base_col] = self.df_plot_exact_fair[self.metric_col].shift(
+                1).fillna(0)
+            self.df_plot_exact_fair[self.base_col] = list(
+                self.df_plot_exact_fair[self.base_col].values[0:-1]) + [0]
         return df_plot
-    
+
     def plot_bars(self, ax, df_plot, color_kwargs={}, bar_kwargs={}):
         '''
         Plot the bar elements of the waterfall chart 
@@ -94,50 +147,60 @@ class WaterfallChart():
             bar_kwargs [dict]: (optional) arguments to control the bars on the plot. Default is {}
         '''
         barcolors, _ = self.create_color_list(df_plot, color_kwargs)
-        bar_kwargs['width'] = bar_kwargs.get('width', 0.8) # 0.6
-        #print(df_plot[self.metric_col])
+        bar_kwargs['width'] = bar_kwargs.get('width', 0.8)  # 0.6
+        # print(df_plot[self.metric_col])
         if self.step_values_exact_fair is not None:
-            barcolors_, _ = self.create_color_list(self.df_plot_exact_fair, color_kwargs)
-            
-            x_idx_top = 1 * ((self.df_plot_exact_fair[self.base_col] > df_plot[self.base_col]) & (self.df_plot_exact_fair[self.base_col] > df_plot[self.metric_col]))
-            x_idx_top_grey = x_idx_top * (np.array(barcolors_) == color_kwargs['c_bar_neg'])
+            barcolors_, _ = self.create_color_list(
+                self.df_plot_exact_fair, color_kwargs)
+
+            x_idx_top = 1 * ((self.df_plot_exact_fair[self.base_col] > df_plot[self.base_col]) & (
+                self.df_plot_exact_fair[self.base_col] > df_plot[self.metric_col]))
+            x_idx_top_grey = x_idx_top * \
+                (np.array(barcolors_) == color_kwargs['c_bar_neg'])
             x_idx_top_grey = list(map(bool, x_idx_top_grey))
-            
-            x_idx_bot = 1 * ((self.df_plot_exact_fair[self.metric_col] < df_plot[self.base_col]) & (self.df_plot_exact_fair[self.metric_col] < df_plot[self.metric_col]))
-            x_idx_bot_grey = x_idx_bot * (np.array(barcolors_) == color_kwargs['c_bar_pos'])
+
+            x_idx_bot = 1 * ((self.df_plot_exact_fair[self.metric_col] < df_plot[self.base_col]) & (
+                self.df_plot_exact_fair[self.metric_col] < df_plot[self.metric_col]))
+            x_idx_bot_grey = x_idx_bot * \
+                (np.array(barcolors_) == color_kwargs['c_bar_pos'])
             x_idx_bot_grey = list(map(bool, x_idx_bot_grey))
 
             height_color = df_plot[self.delta_col]
             bottom_color = df_plot[self.base_col]
             height_grey = copy.deepcopy(height_color)
             bottom_grey = copy.deepcopy(bottom_color)
-            
-            height_grey.loc[x_idx_bot_grey] = self.df_plot_exact_fair[self.metric_col][x_idx_bot_grey] - df_plot[self.metric_col][x_idx_bot_grey]
+
+            height_grey.loc[x_idx_bot_grey] = self.df_plot_exact_fair[self.metric_col][x_idx_bot_grey] - \
+                df_plot[self.metric_col][x_idx_bot_grey]
             bottom_grey.loc[x_idx_bot_grey] = df_plot[self.metric_col][x_idx_bot_grey]
-            height_grey.loc[x_idx_top_grey] = df_plot[self.base_col][x_idx_top_grey] - self.df_plot_exact_fair[self.base_col][x_idx_top_grey]
+            height_grey.loc[x_idx_top_grey] = df_plot[self.base_col][x_idx_top_grey] - \
+                self.df_plot_exact_fair[self.base_col][x_idx_top_grey]
             bottom_grey.loc[x_idx_top_grey] = self.df_plot_exact_fair[self.base_col][x_idx_top_grey]
 
             height_color_exact = self.df_plot_exact_fair[self.delta_col]
             bottom_color_exact = self.df_plot_exact_fair[self.base_col]
-            
-            height_color_exact.loc[x_idx_top_grey] = self.df_plot_exact_fair[self.metric_col][x_idx_top_grey] - df_plot[self.metric_col][x_idx_top_grey]
+
+            height_color_exact.loc[x_idx_top_grey] = self.df_plot_exact_fair[self.metric_col][x_idx_top_grey] - \
+                df_plot[self.metric_col][x_idx_top_grey]
             bottom_color_exact.loc[x_idx_top_grey] = df_plot[self.metric_col][x_idx_top_grey]
-            height_color_exact.loc[x_idx_bot_grey] = df_plot[self.base_col][x_idx_bot_grey] - self.df_plot_exact_fair[self.base_col][x_idx_bot_grey]
+            height_color_exact.loc[x_idx_bot_grey] = df_plot[self.base_col][x_idx_bot_grey] - \
+                self.df_plot_exact_fair[self.base_col][x_idx_bot_grey]
             bottom_color_exact.loc[x_idx_bot_grey] = self.df_plot_exact_fair[self.base_col][x_idx_bot_grey]
-            
+
             ax.bar(x=self.df_plot_exact_fair.index,
                    height=height_color_exact, bottom=bottom_color_exact,
-                   hatch='///', alpha = 0.6, # '\\', '|||', 'xxx' # 0.5
-                   linewidth=0.8, color='white', edgecolor=barcolors_) # steelblue
-            
+                   hatch='///', alpha=0.6,  # '\\', '|||', 'xxx' # 0.5
+                   linewidth=0.8, color='white', edgecolor=barcolors_)  # steelblue
+
             ax.bar(x=self.df_plot_exact_fair.index,
-                       height= height_grey, bottom= bottom_grey,
-                       linewidth=0.8, hatch='///', alpha = 0.5, # '\\', '|||', 'xxx' # steelblue
-                       color='white', edgecolor='gray')
-            
-        ax.bar(x=df_plot.index, height=df_plot[self.delta_col], bottom=df_plot[self.base_col], color=barcolors, **bar_kwargs)
+                   height=height_grey, bottom=bottom_grey,
+                   linewidth=0.8, hatch='///', alpha=0.5,  # '\\', '|||', 'xxx' # steelblue
+                   color='white', edgecolor='gray')
+
+        ax.bar(x=df_plot.index, height=df_plot[self.delta_col],
+               bottom=df_plot[self.base_col], color=barcolors, **bar_kwargs)
         return ax
-    
+
     def plot_link_lines(self, ax, df_plot, line_kwargs={}):
         '''
         Plot the line elements of the waterfall chart 
@@ -172,13 +235,14 @@ class WaterfallChart():
             if label_type == 'list':
                 label = str(round(bar_labels[i], 2))
             elif label_type == 'value':
-                label = '{:,}'.format(round(int(df_plot[self.delta_col][i]), 2))
+                label = '{:,}'.format(
+                    round(int(df_plot[self.delta_col][i]), 2))
             else:
                 label = bar_labels
-            ax.text(i, v*1.03, label, color=txtcolors[i],  
+            ax.text(i, v*1.03, label, color=txtcolors[i],
                     horizontalalignment='center', verticalalignment='baseline')
         return ax
-    
+
     def create_color_list(self, df_plot, color_kwargs):
         '''
         Create the lists of colors (bar and label) for the corresponding values to plot
@@ -186,27 +250,38 @@ class WaterfallChart():
             df_plot [DataFrame]: data to plot.
             color_kwargs [dict]: arguments to control the colors of the plot.
         '''
-        c_bar_pos, c_bar_neg, c_bar_start, c_bar_end, c_text_pos, c_text_neg, c_text_start, c_text_end = self.get_colors(color_kwargs)
+        c_bar_pos, c_bar_neg, c_bar_start, c_bar_end, c_text_pos, c_text_neg, c_text_start, c_text_end = self.get_colors(
+            color_kwargs)
         mid_values = df_plot[self.delta_col][1:-1].values
-        barcolors = [c_bar_start] + [c_bar_neg if x<0 else c_bar_pos for x in mid_values] + [c_bar_end]        
-        txtcolors = [c_text_start] + [c_text_neg if x<0 else c_text_pos for x in mid_values] + [c_text_end]
+        barcolors = [c_bar_start] + [c_bar_neg if x <
+                                     0 else c_bar_pos for x in mid_values] + [c_bar_end]
+        txtcolors = [c_text_start] + [c_text_neg if x <
+                                      0 else c_text_pos for x in mid_values] + [c_text_end]
         return barcolors, txtcolors
-        
+
     @staticmethod
     def get_colors(color_kwargs):
         '''
         Available color controls and their default values.
         '''
-        c_bar_pos = color_kwargs.get('c_bar_pos', 'seagreen') # Bar color for positive deltas
-        c_bar_neg = color_kwargs.get('c_bar_neg', 'salmon') # Bar color for negative deltas
-        c_bar_start = color_kwargs.get('c_bar_start', 'c') # Bar color for the very first bar
-        c_bar_end = color_kwargs.get('c_bar_end', 'grey') # Bar color for the last bar
-        c_text_pos = color_kwargs.get('c_text_pos', 'darkgreen') # Label text color for positive deltas
-        c_text_neg = color_kwargs.get('c_text_neg', 'maroon') # Label text color for negative deltas
-        c_text_start = color_kwargs.get('c_text_start', 'black') # Label text color for the very first bar
-        c_text_end = color_kwargs.get('c_text_end', 'black') # Label text color for the last bar
+        c_bar_pos = color_kwargs.get(
+            'c_bar_pos', 'seagreen')  # Bar color for positive deltas
+        # Bar color for negative deltas
+        c_bar_neg = color_kwargs.get('c_bar_neg', 'salmon')
+        # Bar color for the very first bar
+        c_bar_start = color_kwargs.get('c_bar_start', 'c')
+        # Bar color for the last bar
+        c_bar_end = color_kwargs.get('c_bar_end', 'grey')
+        # Label text color for positive deltas
+        c_text_pos = color_kwargs.get('c_text_pos', 'darkgreen')
+        # Label text color for negative deltas
+        c_text_neg = color_kwargs.get('c_text_neg', 'maroon')
+        # Label text color for the very first bar
+        c_text_start = color_kwargs.get('c_text_start', 'black')
+        # Label text color for the last bar
+        c_text_end = color_kwargs.get('c_text_end', 'black')
         return c_bar_pos, c_bar_neg, c_bar_start, c_bar_end, c_text_pos, c_text_neg, c_text_start, c_text_end
-    
+
     @staticmethod
     def check_label_type(bar_labels):
         '''
@@ -222,18 +297,32 @@ class WaterfallChart():
         elif isinstance(bar_labels, str):
             label_type = 'str'
         else:
-            raise ValueError('bar_labels can only be of type bool, string, or list. Please check input type.')
+            raise ValueError(
+                'bar_labels can only be of type bool, string, or list. Please check input type.')
         return label_type
-        
 
 
-def waterfall_plot(categories_list, unfs_list, unfs_hash = [None, None], unfs_name = ["exact", "approximate"], unf_index = 1):
+def waterfall_plot(unfs_list_of_dict):
+    unfs_list = [list(unfs.values()) for unfs in unfs_list_of_dict]
+    unfs_index = len(unfs_list[0])-1
+    categories = []
+    unfs_name = ["exact"] + ["approximate"]*(len(unfs_list)-1)
+    unfs_hash = [None] + [unfs_list[0]]*(len(unfs_list)-1)
+
+    for i in range(unfs_index):
+        if i+1 == 1:
+            categories.append('($A_{1}$)-Fair')
+        else:
+            categories.append(f'($A_{{1:{i+1}}}$)-Fair')
+
+    categories_list = [categories]*len(unfs_list)
+
     fig, ax = plt.subplots(1, len(unfs_name), figsize=(16, 4))
     if len(unfs_name) < 2:
         ax = [ax]
     color_kwargs = {
         'c_bar_pos': 'orange',
-        'c_bar_neg': 'forestgreen', #'darkgreen', 'darkred'
+        'c_bar_neg': 'forestgreen',  # 'darkgreen', 'darkred'
         'c_bar_start': 'grey',
         'c_bar_end': 'grey',
         'c_text_pos': 'black',
@@ -245,16 +334,17 @@ def waterfall_plot(categories_list, unfs_list, unfs_hash = [None, None], unfs_na
     line_kwargs = {'color': 'grey'}
     for i, unfs in enumerate(unfs_list):
         waterfall = WaterfallChart(
-            step_values = unfs,
-            step_values_exact_fair = unfs_hash[i],
-            step_names = ["base\nmodel"] + categories_list[i], 
-            metric_name = "Unfairness in $A$"+f"$_{unf_index}$",
-            last_step_label = "Final\nmodel"
+            step_values=unfs,
+            step_values_exact_fair=unfs_hash[i],
+            step_names=["Base\nmodel"] + categories_list[i],
+            metric_name="Unfairness in $A$"+f"$_{unfs_index}$",
+            last_step_label="Final\nmodel"
         )
         wf_ax = waterfall.plot_waterfall(
-            ax = ax[i],
-            title = f"Sequential ({unfs_name[i]}) fairness: " + "$\mathcal{U}$"+f"$_{unf_index}$ result",
-            bar_labels = unfs + [unfs[-1]],
-            bar_kwargs = bar_kwargs,
-            line_kwargs = line_kwargs,
-            color_kwargs = color_kwargs)
+            ax=ax[i],
+            title=f"Sequential ({unfs_name[i]}) fairness: " +
+            "$\hat{\mathcal{U}}$"+f"$_{unfs_index}$ result",
+            bar_labels=unfs + [unfs[-1]],
+            bar_kwargs=bar_kwargs,
+            line_kwargs=line_kwargs,
+            color_kwargs=color_kwargs)
