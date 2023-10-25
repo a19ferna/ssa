@@ -34,6 +34,14 @@ def unfairness_multi(y_fair_dict, x_ssa_test):
     return unfairness_dict
 
 
+def unfairness_multi_permutations(permut_y_fair_dict, all_combs_x_ssa_test):
+    unfs_list = []
+    for key in permut_y_fair_dict.keys():
+        unfs_list.append(unfairness_multi(
+            permut_y_fair_dict[key], np.array(all_combs_x_ssa_test[key])))
+    return unfs_list
+
+
 def risk(y_true, y_fair, classif=False):
     if classif:
         return accuracy_score(y_true, y_fair)
@@ -44,4 +52,12 @@ def risk(y_true, y_fair, classif=False):
 def risk_multi(y_true, y_fair_dict, classif=False):
     risk_dict = {}
     for key in y_fair_dict.keys():
-        risk_dict[key] = risk(y_true, list(y_fair_dict[key].values()), classif)
+        risk_dict[key] = risk(y_true, list(y_fair_dict[key]), classif)
+    return risk_dict
+
+
+def risk_multi_permutation(y_true, permut_y_fair_dict, classif=False):
+    risk_list = []
+    for key in permut_y_fair_dict.keys():
+        risk_list.append(risk_multi(y_true, permut_y_fair_dict[key], classif))
+    return risk_list

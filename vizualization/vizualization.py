@@ -3,7 +3,10 @@ import pandas as pd
 import copy
 import matplotlib.pyplot as plt
 import seaborn as sns
+from fairness.approximatemultiwasserstein import MultiWasserStein
+from itertools
 
+##density functions##
 
 def viz_fairness_distrib(y_fair_test, x_ssa_test):
     plt.figure(figsize=(12, 9))
@@ -45,6 +48,8 @@ def viz_fairness_distrib(y_fair_test, x_ssa_test):
     # Set plot labels and title
     plt.xlabel('Prediction')
     plt.ylabel('Density')
+    
+##Waterfall##
 
 
 # Adapted from: https://github.com/microsoft/waterfall_ax/blob/main/waterfall_ax/waterfall_ax.py
@@ -349,39 +354,88 @@ def waterfall_plot(unfs_list_of_dict):
             line_kwargs=line_kwargs,
             color_kwargs=color_kwargs)
 
+## Arrow Plot ##
 
-def arrow_plot(unfs_dict, risks_dict):
+
+def permutations_cols(x_ssa):
+    n = len(x_ssa[0])
+    ind_cols = list(range(n))
+    permut_cols = list(itertools.permutations(ind_cols))
+    x_ssa_with_ind = np.vstack((ind_cols, x_ssa))
+
+    dict_all_combs = {}
+    for permutation in permut_cols:
+        permuted_x_ssa = x_ssa_with_ind[:, permutation]
+        # First row as the key (converted to tuple)
+        key = tuple(permuted_x_ssa[0])
+        # Other rows as values (converted to list)
+        values = permuted_x_ssa[1:].tolist()
+        dict_all_combs[key] = values
+
+    return dict_all_combs
+
+
+def calculate_perm_wst(y_calib, x_ssa_calib, y_test, x_ssa_test):
+    all_perm_calib = permutations_cols(x_ssa_calib)
+    all_perm_test = permutations_cols(x_ssa_test)
+    store_dict = {}
+    for key in all_perm_calib:
+        wst = MultiWasserStein()
+        wst.fit(y_calib, np.array(all_perm_calib[key]))
+        wst.transform(y_test, np.array(all_perm_test[key]))
+        store_dict[key] = wst.get_sequential_fairnsess()
+        old_keys = list(store_dict[key].keys())
+        new_keys = ['Base model'] + [f'sens_var_{k}' for k in key]
+        key_mapping = dict(zip(old_keys, new_keys))
+        store_dict[key] = {key_mapping[old_key]
+            : value for old_key, value in store_dict[key].items()}
+    return store_dict
+
+
+def arrow_plot(unfs_dict, risks_dict, permutations=False, base_model=True, final_model=True):
     x = []
     y = []
-    sens = []
+    sens = [0]
 
-    for key in unfs_dict.keys():
+    for i, key in enumerate(unfs_dict.keys()):
         x.append(unfs_dict[key])
+        if i != 0:
+            sens.append(int(key[9:]))
 
     for key in risks_dict.keys():
         y.append(risks_dict[key])
 
-    for i in range(len(unfs_dict)):
-        sens.append(i+1)
+    global ax
 
-    fig, ax = plt.subplots()
+    if not permutations:
+        fig, ax = plt.subplots()
+
     line = ax.plot(x, y, linestyle="--", alpha=0.25, color="grey")[0]
-    for i in range(len(x)):
-        if i == 0:
+
+    for i in range(len(sens)):
+        if (i == 0) & (base_model):
             line.axes.annotate(f"Base\nmodel", xytext=(
                 x[0]+np.min(x)/20, y[0]), xy=(x[0], y[0]), size=10)
             ax.scatter(x[0], y[0], label="Base model", marker="^", s=100)
-        elif i == len(x)-1:
-            label = f"$A_{1:{len(unfs_dict)}}$-fair"
-            line.axes.annotate(label, xytext=(
-                x[i]+np.min(x)/20, y[i]), xy=(x[i], y[i]), size=10)
-            ax.scatter(x[i], y[i], label=label, marker="*", s=150)
         elif i == 1:
-            label = f"$A_{sens[0]}$-fair"
+            label = f"$A_{sens[i]}$-fair"
             line.axes.annotate(label, xytext=(
                 x[i]+np.min(x)/20, y[i]), xy=(x[i], y[i]), size=10)
             ax.scatter(x[i], y[i], label=label, marker="+", s=150)
-
+        elif (i == len(x)-1) & (final_model):
+            # Define string with underscore.
+            label = f"$A_{1}$" + r"$_:$" + f"$_{i}$-fair"
+            line.axes.annotate(label, xytext=(
+                x[i]+np.min(x)/20, y[i]), xy=(x[i], y[i]), size=10)
+            ax.scatter(x[i], y[i], label=label, marker="*", s=150)
+        elif (i == 2) & (i < len(x)-1):
+            # Define string with underscore.
+            label = f"$A_{sens[1]}$" + r"$_,$" + f"$_{sens[i]}$-fair"
+            line.axes.annotate(label, xytext=(
+                x[i]+np.min(x)/20, y[i]), xy=(x[i], y[i]), size=10)
+            ax.scatter(x[i], y[i], label=label, marker="+", s=150)
+        else:
+            ax.scatter(x[i], y[i], marker="+", s=150, color="grey", alpha=0.4)
     ax.set_xlabel("Unfairness")
     ax.set_ylabel("Risk")
     ax.set_xlim((np.min(x)-np.min(x)/10-np.max(x)/10,
@@ -390,4 +444,18 @@ def arrow_plot(unfs_dict, risks_dict):
                 np.max(y)+np.min(y)/10+np.max(y)/10))
     ax.set_title("Exact fairness")
     ax.legend(loc="best")
-    plt.show()
+
+
+def arrow_plot_permutations(unfs_list, risk_list):
+    global ax
+    fig, ax = plt.subplots()
+    for i in range(len(unfs_list)):
+        if i == 0:
+            arrow_plot(unfs_list[i], risk_list[i],
+                       permutations=True, final_model=False)
+        elif i == len(unfs_list)-1:
+            arrow_plot(unfs_list[i], risk_list[i],
+                       permutations=True, base_model=False)
+        else:
+            arrow_plot(unfs_list[i], risk_list[i], permutations=True,
+                       base_model=False, final_model=False)
