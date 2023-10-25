@@ -4,9 +4,10 @@ import copy
 import matplotlib.pyplot as plt
 import seaborn as sns
 from fairness.approximatemultiwasserstein import MultiWasserStein
-from itertools
+import itertools
 
-##density functions##
+## density functions##
+
 
 def viz_fairness_distrib(y_fair_test, x_ssa_test):
     plt.figure(figsize=(12, 9))
@@ -48,8 +49,8 @@ def viz_fairness_distrib(y_fair_test, x_ssa_test):
     # Set plot labels and title
     plt.xlabel('Prediction')
     plt.ylabel('Density')
-    
-##Waterfall##
+
+## Waterfall##
 
 
 # Adapted from: https://github.com/microsoft/waterfall_ax/blob/main/waterfall_ax/waterfall_ax.py
@@ -387,8 +388,7 @@ def calculate_perm_wst(y_calib, x_ssa_calib, y_test, x_ssa_test):
         old_keys = list(store_dict[key].keys())
         new_keys = ['Base model'] + [f'sens_var_{k}' for k in key]
         key_mapping = dict(zip(old_keys, new_keys))
-        store_dict[key] = {key_mapping[old_key]
-            : value for old_key, value in store_dict[key].items()}
+        store_dict[key] = {key_mapping[old_key]                           : value for old_key, value in store_dict[key].items()}
     return store_dict
 
 
