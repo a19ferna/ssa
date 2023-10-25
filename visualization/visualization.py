@@ -384,7 +384,7 @@ def calculate_perm_wst(y_calib, x_ssa_calib, y_test, x_ssa_test):
         wst = MultiWasserStein()
         wst.fit(y_calib, np.array(all_perm_calib[key]))
         wst.transform(y_test, np.array(all_perm_test[key]))
-        store_dict[key] = wst.get_sequential_fairnsess()
+        store_dict[key] = wst.get_sequential_fairness()
         old_keys = list(store_dict[key].keys())
         new_keys = ['Base model'] + [f'sens_var_{k}' for k in key]
         key_mapping = dict(zip(old_keys, new_keys))
