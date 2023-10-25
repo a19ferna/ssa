@@ -56,7 +56,7 @@ def risk_multi(y_true, y_fair_dict, classif=False):
     return risk_dict
 
 
-def risk_multi_permutation(y_true, permut_y_fair_dict, classif=False):
+def risk_multi_permutations(y_true, permut_y_fair_dict, classif=False):
     risk_list = []
     for key in permut_y_fair_dict.keys():
         risk_list.append(risk_multi(y_true, permut_y_fair_dict[key], classif))
