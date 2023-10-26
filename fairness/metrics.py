@@ -12,6 +12,13 @@ def diff_quantile(data1, data2):
 
     Returns:
     float: The unfairness value between the two populations.
+
+    Example:
+    >>> data1 = np.array([5, 2, 4, 6, 1])
+    >>> data2 = np.array([9, 6, 4, 7, 6])
+    >>> diff = diff_quantile(data1, data2)
+    >>> print(diff)
+    0.8
     """
     probs = np.linspace(0, 1, num=100)
     eqf1 = np.quantile(data1, probs)
@@ -20,24 +27,30 @@ def diff_quantile(data1, data2):
     return unfair_value
 
 
-def unfairness(y_fair, x_ssa_test):
+def unfairness(y_predict, x_ssa_test):
     """
     Compute the unfairness value for a given fair output and single sensitive attribute data contening several modalities.
 
     Parameters:
-    y_fair (array-like): Fair output data.
+    y_predict (array-like): Predicted (fair or not) output data.
     x_ssa_test (array-like): Sensitive attribute data.
 
     Returns:
     float: Unfairness value in the dataset.
+    Example:
+    >>> y_predict = np.array([5, 0, 6, 7, 9])
+    >>> x_ssa_test = np.array([1, 0, 1, 2, 2])
+    >>> unf = unfairness(y_predict, x_ssa_test)
+    >>> print(unf)
+    0.8
     """
     new_list = []
     for sens in x_ssa_test.T:
         sens_val = list(set(sens))
-        data1 = y_fair
+        data1 = y_predict
         lst_unfairness = []
         for mod in sens_val:
-            data2 = y_fair[sens == mod]
+            data2 = y_predict[sens == mod]
             lst_unfairness.append(diff_quantile(data1, data2))
         new_list.append(max(lst_unfairness))
     return max(new_list)
@@ -45,7 +58,7 @@ def unfairness(y_fair, x_ssa_test):
 
 def unfairness_multi(y_fair_dict, x_sa_test):
     """
-    Compute maximum unfairness values for multiple fair output datasets and multiple sensitive attribute datasets.
+    Compute unfairness values for multiple fair output datasets and multiple sensitive attribute datasets.
 
     Parameters:
     y_fair_dict (dict): A dictionary where keys represent sensitive features and values are arrays
@@ -56,6 +69,12 @@ def unfairness_multi(y_fair_dict, x_sa_test):
 
     Returns:
     dict: A dictionary containing unfairness values for each level of fairness.
+
+    Example:
+    >>> y_fair_dict = {'Base model':np.array([19,39,65]), 'sens_var_1':np.array([22,40,50]), 'sens_var_2':np.array([28,39,42])'}
+    >>> x_sa_test = np.array([['blue', 2], ['red', 9], ['green', 5]])
+    >>> unf = unfairness_multi(y_fair_dict, x_sa_test)
+    >>> print(unf_list)
     """
     unfairness_dict = {}
     for i, y_fair in enumerate(y_fair_dict.values()):
@@ -64,31 +83,39 @@ def unfairness_multi(y_fair_dict, x_sa_test):
     return unfairness_dict
 
 
-def unfairness_multi_permutations(permut_y_fair_dict, all_combs_x_ssa_test):
+def unfairness_multi_permutations(permut_y_fair_dict, all_combs_x_sa_test):
     """
-    Compute maximum unfairness values for multiple fair output datasets and multiple sensitive attribute datasets.
+    Compute unfairness values for multiple fair output datasets and multiple sensitive attribute datasets.
 
     Parameters:
     permut_y_fair_dict (dict): A dictionary containing permutations of fair output datasets.
-    all_combs_x_ssa_test (dict): A dictionary containing combinations of sensitive attribute datasets.
+    all_combs_x_sa_test (dict): A dictionary containing combinations of columns permutations for sensitive attribute datasets.
 
     Returns:
     list: A list of dictionaries containing unfairness values for each permutation of fair output datasets.
+
+    Example:
+    >>> permut_y_fair_dict = {(1,2): {'Base model':np.array([19,39,65]), 'sens_var_1':np.array([22,40,50]), 'sens_var_2':np.array([28,39,42])'},
+                               (2,1): {'Base model':np.array([19,39,65]), 'sens_var_2':np.array([34,39,60]), 'sens_var_1':np.array([28,39,42])'}}
+    >>> all_combs_x_sa_test = {(1,2): np.array([['blue', 2], ['red', 9], ['green', 5]]),
+                               (2,1): np.array([[2, 'blue'], [9, 'red'], [5, 'green]])}
+    >>> unfs_list = unfairness_multi_permutations(permut_y_fair_dict, all_combs_x_sa_test)
+    >>> print(unfs_list)
     """
     unfs_list = []
     for key in permut_y_fair_dict.keys():
         unfs_list.append(unfairness_multi(
-            permut_y_fair_dict[key], np.array(all_combs_x_ssa_test[key])))
+            permut_y_fair_dict[key], np.array(all_combs_x_sa_test[key])))
     return unfs_list
 
 
 def risk(y_true, y_predict, classif=False):
     """
-    Calculate the risk value for predicted fair output compared to the true labels.
+    Compute the risk value for predicted fair output compared to the true labels.
 
     Parameters:
     y_true (array-like): True labels or ground truth values.
-    y_fair (array-like): Predicted (fair or not) output values.
+    y_predict (array-like): Predicted (fair or not) output values.
     classif (bool, optional): If True, assumes classification task and computes accuracy. 
                               If False (default), assumes regression task and computes mean squared error.
 
@@ -97,14 +124,14 @@ def risk(y_true, y_predict, classif=False):
 
     Example:
     >>> y_true = [1, 0, 1, 1, 0]
-    >>> y_fair = [0, 1, 1, 1, 0]
-    >>> classification_risk = risk(y_true, y_fair, classif=True)
+    >>> y_predict = [0, 1, 1, 1, 0]
+    >>> classification_risk = risk(y_true, y_predict, classif=True)
     >>> print(classification_risk)
     0.8
 
     >>> y_true = [1.2, 2.5, 3.8, 4.0, 5.2]
-    >>> y_fair = [1.0, 2.7, 3.5, 4.2, 5.0]
-    >>> regression_risk = risk(y_true, y_fair)
+    >>> y_predict = [1.0, 2.7, 3.5, 4.2, 5.0]
+    >>> regression_risk = risk(y_true, y_predict)
     >>> print(regression_risk)
     0.06
     """
@@ -115,6 +142,23 @@ def risk(y_true, y_predict, classif=False):
 
 
 def risk_multi(y_true, y_fair_dict, classif=False):
+    """
+    Compute the risk values for multiple fair output datasets compared to the true labels.
+
+    Parameters:
+    y_true (array-like): True labels or ground truth values.
+    y_fair_dict (dict): A dictionary containing sequentally fair output datasets.
+    classif (bool, optional): If True, assumes classification task and computes accuracy. 
+                              If False (default), assumes regression task and computes mean squared error.
+
+    Returns:
+    dict: A dictionary containing risk values for sequentally fair output datasets.
+
+    Example:
+    >>> y_true = np.array([15, 38, 68])
+    >>> y_fair_dict = {'Base model':np.array([19,39,65]), 'sens_var_1':np.array([22,40,50]), 'sens_var_2':np.array([28,39,42])}
+    >>> risk_values = risk_multi_permutations(y_true, y_fair_dict, classif=False)
+    """
     risk_dict = {}
     for key in y_fair_dict.keys():
         risk_dict[key] = risk(y_true, list(y_fair_dict[key]), classif)
@@ -123,7 +167,7 @@ def risk_multi(y_true, y_fair_dict, classif=False):
 
 def risk_multi_permutations(y_true, permut_y_fair_dict, classif=False):
     """
-    Calculate the risk values for multiple fair output datasets compared to the true labels, considering permutations.
+    Compute the risk values for multiple fair output datasets compared to the true labels, considering permutations.
 
     Parameters:
     y_true (array-like): True labels or ground truth values.
@@ -135,9 +179,9 @@ def risk_multi_permutations(y_true, permut_y_fair_dict, classif=False):
     list: A list of dictionaries containing risk values for each permutation of fair output datasets.
 
     Example:
-    >>> y_true = np.arrey([15, 38, 68])
-    >>> permut_y_fair_dict = {(1,2): {'Base model':np.array([19,39,65]), 'sens_var_1':np.array([22,40,50]), sens_var_2:np.array([28,39,42])'},
-                               (2,1): {'Base model':np.array([19,39,65]), 'sens_var_2':np.array([34,39,60]), sens_var_1:np.array([28,39,42])'}}
+    >>> y_true = np.array([15, 38, 68])
+    >>> permut_y_fair_dict = {(1,2): {'Base model':np.array([19,39,65]), 'sens_var_1':np.array([22,40,50]), 'sens_var_2':np.array([28,39,42])'},
+                               (2,1): {'Base model':np.array([19,39,65]), 'sens_var_2':np.array([34,39,60]), 'sens_var_1':np.array([28,39,42])'}}
     >>> risk_values = risk_multi_permutations(y_true, permut_y_fair_dict, classif=False)
     """
     risk_list = []
