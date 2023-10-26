@@ -1,7 +1,5 @@
 from statsmodels.distributions.empirical_distribution import ECDF
 from fairness.quantile import EQF
-from sklearn.metrics import mean_squared_error, f1_score, accuracy_score
-from itertools import permutations
 import numpy as np
 
 from statsmodels.distributions.empirical_distribution import ECDF
