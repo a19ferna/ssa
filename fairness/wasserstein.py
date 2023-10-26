@@ -2,9 +2,6 @@ from statsmodels.distributions.empirical_distribution import ECDF
 from fairness.quantile import EQF
 import numpy as np
 
-from statsmodels.distributions.empirical_distribution import ECDF
-from fairness.quantile import EQF
-
 
 class BaseHelper():
     """
