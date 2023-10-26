@@ -477,7 +477,7 @@ class MultiWasserStein(Wasserstein):
         --------
         >>> wasserstein = MultiWasserStein(sigma=0.001)
         >>> y_calib = [0, 1, 1, 0]
-        >>> x_sa_calib = [[1, 2], [2, 3], [3, 4], [4, 5]]
+        >>> x_sa_calib = np.array([['blue', 2], ['red', 9], ['green', 5], ['green', 9]])
         >>> wasserstein.fit(y_calib, x_sa_calib)
         >>> y_test = [0, 1, 1, 0]
         >>> x_sa_test = [[1, 2], [2, 3], [3, 4], [4, 5]]
@@ -526,7 +526,7 @@ class MultiWasserStein(Wasserstein):
         --------
         >>> wasserstein = MultiWasserStein(sigma=0.001)
         >>> y_calib = [0, 1, 1, 0]
-        >>> x_sa_calib = [[1, 2], [2, 3], [3, 4], [4, 5]]
+        >>> x_sa_calib = np.array([['blue', 2], ['red', 9], ['green', 5], ['green', 9]])
         >>> wasserstein.fit(y_calib, x_sa_calib)
         >>> y_test = [0, 1, 1, 0]
         >>> x_sa_test = [[1, 2], [2, 3], [3, 4], [4, 5]]
