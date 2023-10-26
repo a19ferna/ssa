@@ -357,7 +357,6 @@ def waterfall_plot(unfs_list_of_dict):
 
 ## Arrow Plot ##
 
-
 def permutations_cols(x_ssa):
     n = len(x_ssa[0])
     ind_cols = list(range(n))
@@ -375,23 +374,24 @@ def permutations_cols(x_ssa):
 
     return dict_all_combs
 
-
 def calculate_perm_wst(y_calib, x_ssa_calib, y_test, x_ssa_test, epsilon=None):
     all_perm_calib = permutations_cols(x_ssa_calib)
     all_perm_test = permutations_cols(x_ssa_test)
-    if epsilon == None:
-        all_perm_epsilon = None
-    else:
-        all_perm_epsilon = permutations_cols(epsilon)
-    print(all_perm_epsilon)
+    if epsilon != None:
+        all_perm_epsilon = permutations_cols(np.array([np.array(epsilon).T]))
+        for key in all_perm_epsilon.keys():
+            all_perm_epsilon[key] = all_perm_epsilon[key][0]
 
     store_dict = {}
     for key in all_perm_calib:
         wst = MultiWasserStein()
         wst.fit(y_calib, np.array(all_perm_calib[key]))
-        wst.transform(y_test, np.array(
-            all_perm_test[key]), all_perm_epsilon[key])
-        print(all_perm_epsilon[key])
+        if epsilon == None:
+            wst.transform(y_test, np.array(
+                all_perm_test[key]))
+        else :
+            wst.transform(y_test, np.array(
+                all_perm_test[key]), all_perm_epsilon[key])
         store_dict[key] = wst.get_sequential_fairness()
         old_keys = list(store_dict[key].keys())
         new_keys = ['Base model'] + [f'sens_var_{k}' for k in key]
