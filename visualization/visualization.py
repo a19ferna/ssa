@@ -339,6 +339,19 @@ class WaterfallChart():
 
 
 def waterfall_plot(unfs_list_of_dict):
+    """
+    Generate a waterfall plot to visualize fairness metrics over sequential models.
+
+    Parameters
+    ----------
+    unfs_list_of_dict : list of dict
+        List of dictionaries containing fairness metric values for each level of fairness.
+        Each dictionary represents a certain trade-off between fairness and performance.
+
+    Returns
+    -------
+    None
+    """
     unfs_list = [list(unfs.values()) for unfs in unfs_list_of_dict]
     unfs_index = len(unfs_list[0])-1
     categories = []
