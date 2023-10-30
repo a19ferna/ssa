@@ -24,6 +24,19 @@ class EQF:
     _calculate_eqf(sample_data): Private method to calculate interpolater, min_val, and max_val.
     __call__(value_): Callable method to compute the interpolated value for a given quantile.
 
+    Example usage:
+    >>> sample_data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    >>> eqf = EQF(sample_data)
+    >>> print(eqf(0.5))  # Interpolated value at quantile 0.5
+    5.5
+
+    Example usage:
+    >>> sample_data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    >>> eqf = EQF(sample_data)
+    >>> print(eqf([0.2, 0.5, 0.8]))  # Interpolated value at quantiles 0.2, 0.5 and 0.8
+    [2.8 5.5 8.2]
+
+
     Raises:
     ValueError: If the input value_ is outside the range [0, 1].
 
