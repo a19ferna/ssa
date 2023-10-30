@@ -3,7 +3,7 @@ import pandas as pd
 import copy
 import matplotlib.pyplot as plt
 import seaborn as sns
-from fairness.approximatemultiwasserstein import MultiWasserStein
+from fairness.wasserstein import MultiWasserStein
 import itertools
 
 ## density functions##

@@ -18,7 +18,7 @@ def diff_quantile(data1, data2):
     >>> data2 = np.array([9, 6, 4, 7, 6])
     >>> diff = diff_quantile(data1, data2)
     >>> print(diff)
-    0.8
+    3.98
     """
     probs = np.linspace(0, 1, num=100)
     eqf1 = np.quantile(data1, probs)
@@ -27,9 +27,9 @@ def diff_quantile(data1, data2):
     return unfair_value
 
 
-def unfairness(y_predict, x_ssa_test):
+def unfairness(y_predict, x_sa_test):
     """
-    Compute the unfairness value for a given fair output and single sensitive attribute data contening several modalities.
+    Compute the unfairness value for a given fair output and multiple sensitive attributes data contening several modalities.
 
     Parameters:
     y_predict (array-like): Predicted (fair or not) output data.
@@ -37,28 +37,37 @@ def unfairness(y_predict, x_ssa_test):
 
     Returns:
     float: Unfairness value in the dataset.
+
     Example:
     >>> y_predict = np.array([5, 0, 6, 7, 9])
-    >>> x_ssa_test = np.array([1, 0, 1, 2, 2])
-    >>> unf = unfairness(y_predict, x_ssa_test)
+    >>> x_sa_test = np.array([[1, 2, 1, 1, 2], [0, 1, 2, 1, 0]]).T
+    >>> unf = unfairness(y_predict, x_sa_test)
     >>> print(unf)
-    0.8
+    6.0
     """
     new_list = []
-    for sens in x_ssa_test.T:
-        sens_val = list(set(sens))
+    if len(np.shape(x_sa_test)) == 1:
+        sens_val = list(set(x_sa_test))
         data1 = y_predict
         lst_unfairness = []
         for mod in sens_val:
-            data2 = y_predict[sens == mod]
+            data2 = y_predict[x_sa_test == mod]
             lst_unfairness.append(diff_quantile(data1, data2))
         new_list.append(max(lst_unfairness))
+    else :
+        for sens in x_sa_test.T:
+            sens_val = list(set(sens))
+            data1 = y_predict
+            lst_unfairness = []
+            for mod in sens_val:
+                data2 = y_predict[sens == mod]
+                lst_unfairness.append(diff_quantile(data1, data2))
+            new_list.append(max(lst_unfairness))
     return max(new_list)
-
 
 def unfairness_multi(y_fair_dict, x_sa_test):
     """
-    Compute unfairness values for multiple fair output datasets and multiple sensitive attribute datasets.
+    Compute unfairness values for multiple fair output datasets and multiple sensitive attributes datasets.
 
     Parameters:
     y_fair_dict (dict): A dictionary where keys represent sensitive features and values are arrays
@@ -71,10 +80,10 @@ def unfairness_multi(y_fair_dict, x_sa_test):
     dict: A dictionary containing unfairness values for each level of fairness.
 
     Example:
-    >>> y_fair_dict = {'Base model':np.array([19,39,65]), 'sens_var_1':np.array([22,40,50]), 'sens_var_2':np.array([28,39,42])'}
+    >>> y_fair_dict = {'Base model':np.array([19,39,65]), 'sens_var_1':np.array([22,40,50]), 'sens_var_2':np.array([28,39,42])}
     >>> x_sa_test = np.array([['blue', 2], ['red', 9], ['green', 5]])
-    >>> unf = unfairness_multi(y_fair_dict, x_sa_test)
-    >>> print(unf_list)
+    >>> unf_dict = unfairness_multi(y_fair_dict, x_sa_test)
+    >>> print(unf_dict)
     """
     unfairness_dict = {}
     for i, y_fair in enumerate(y_fair_dict.values()):
@@ -95,10 +104,10 @@ def unfairness_multi_permutations(permut_y_fair_dict, all_combs_x_sa_test):
     list: A list of dictionaries containing unfairness values for each permutation of fair output datasets.
 
     Example:
-    >>> permut_y_fair_dict = {(1,2): {'Base model':np.array([19,39,65]), 'sens_var_1':np.array([22,40,50]), 'sens_var_2':np.array([28,39,42])'},
-                               (2,1): {'Base model':np.array([19,39,65]), 'sens_var_2':np.array([34,39,60]), 'sens_var_1':np.array([28,39,42])'}}
+    >>> permut_y_fair_dict = {(1,2): {'Base model':np.array([19,39,65]), 'sens_var_1':np.array([22,40,50]), 'sens_var_2':np.array([28,39,42])},
+                               (2,1): {'Base model':np.array([19,39,65]), 'sens_var_2':np.array([34,39,60]), 'sens_var_1':np.array([28,39,42])}}
     >>> all_combs_x_sa_test = {(1,2): np.array([['blue', 2], ['red', 9], ['green', 5]]),
-                               (2,1): np.array([[2, 'blue'], [9, 'red'], [5, 'green]])}
+                               (2,1): np.array([[2, 'blue'], [9, 'red'], [5, 'green']])}
     >>> unfs_list = unfairness_multi_permutations(permut_y_fair_dict, all_combs_x_sa_test)
     >>> print(unfs_list)
     """
@@ -123,17 +132,17 @@ def risk(y_true, y_predict, classif=False):
     float: The calculated risk value.
 
     Example:
-    >>> y_true = [1, 0, 1, 1, 0]
-    >>> y_predict = [0, 1, 1, 1, 0]
+    >>> y_true = np.array([1, 0, 1, 1, 0])
+    >>> y_predict = np.array([0, 1, 1, 1, 0])
     >>> classification_risk = risk(y_true, y_predict, classif=True)
     >>> print(classification_risk)
-    0.8
+    0.6
 
     >>> y_true = [1.2, 2.5, 3.8, 4.0, 5.2]
     >>> y_predict = [1.0, 2.7, 3.5, 4.2, 5.0]
     >>> regression_risk = risk(y_true, y_predict)
     >>> print(regression_risk)
-    0.06
+    0.05
     """
     if classif:
         return accuracy_score(y_true, y_predict)
@@ -157,7 +166,7 @@ def risk_multi(y_true, y_fair_dict, classif=False):
     Example:
     >>> y_true = np.array([15, 38, 68])
     >>> y_fair_dict = {'Base model':np.array([19,39,65]), 'sens_var_1':np.array([22,40,50]), 'sens_var_2':np.array([28,39,42])}
-    >>> risk_values = risk_multi_permutations(y_true, y_fair_dict, classif=False)
+    >>> risk_values = risk_multi(y_true, y_fair_dict, classif=False)
     """
     risk_dict = {}
     for key in y_fair_dict.keys():
@@ -180,8 +189,8 @@ def risk_multi_permutations(y_true, permut_y_fair_dict, classif=False):
 
     Example:
     >>> y_true = np.array([15, 38, 68])
-    >>> permut_y_fair_dict = {(1,2): {'Base model':np.array([19,39,65]), 'sens_var_1':np.array([22,40,50]), 'sens_var_2':np.array([28,39,42])'},
-                               (2,1): {'Base model':np.array([19,39,65]), 'sens_var_2':np.array([34,39,60]), 'sens_var_1':np.array([28,39,42])'}}
+    >>> permut_y_fair_dict = {(1,2): {'Base model':np.array([19,39,65]), 'sens_var_1':np.array([22,40,50]), 'sens_var_2':np.array([28,39,42])},
+                               (2,1): {'Base model':np.array([19,39,65]), 'sens_var_2':np.array([34,39,60]), 'sens_var_1':np.array([28,39,42])}}
     >>> risk_values = risk_multi_permutations(y_true, permut_y_fair_dict, classif=False)
     """
     risk_list = []
