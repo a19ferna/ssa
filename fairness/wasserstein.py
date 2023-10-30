@@ -253,8 +253,8 @@ class Wasserstein(BaseHelper):
         Examples
         --------
         >>> wasserstein = Wasserstein(sigma=0.001)
-        >>> y_calib = [0, 1, 1, 0]
-        >>> x_ssa_calib = [[1, 2], [2, 3], [3, 4], [4, 5]]
+        >>> y_calib = np.array([0.0, 1.0, 1.0, 0.0])
+        >>> x_ssa_calib = np.array([1, 2, 0, 2])
         >>> wasserstein.fit(y_calib, x_ssa_calib)
         """
         BaseHelper._check_shape(y_calib, x_ssa_calib)
@@ -296,10 +296,14 @@ class Wasserstein(BaseHelper):
 
         Examples
         --------
+        >>> y_calib = np.array([0.05, 0.08, 0.9, 0.9, 0.01, 0.88])
+        >>> x_ssa_calib = np.array([1, 3, 2, 3, 1, 2])
         >>> wasserstein = Wasserstein(sigma=0.001)
-        >>> y_test = [0, 1, 1, 0]
-        >>> x_ssa_test = [1, 2, 3, 4]
-        >>> fair_predictions = wasserstein.transform(y_test, x_ssa_test, epsilon=0.2)
+        >>> wasserstein.fit(y_calib, x_ssa_calib)
+        >>> y_test = np.array([0.01, 0.99, 0.98, 0.04])
+        >>> x_ssa_test = np.array([3, 1, 2, 3])
+        >>> print(wasserstein.transform(y_test, x_ssa_test, epsilon=0.2))
+        [0.26063673 0.69140959 0.68940959 0.26663673]
         """
 
         BaseHelper._check_epsilon(epsilon)
@@ -471,13 +475,15 @@ class MultiWasserStein(Wasserstein):
         Examples
         --------
         >>> wasserstein = MultiWasserStein(sigma=0.001)
-        >>> y_calib = [0, 1, 1, 0]
-        >>> x_sa_calib = np.array([['blue', 2], ['red', 9], ['green', 5], ['green', 9]])
+        >>> y_calib = np.array([0.6, 0.43, 0.32, 0.8])
+        >>> x_sa_calib = np.array([['blue', 5], ['blue', 9], ['green', 5], ['green', 9]])
         >>> wasserstein.fit(y_calib, x_sa_calib)
-        >>> y_test = [0, 1, 1, 0]
-        >>> x_sa_test = [[1, 2], [2, 3], [3, 4], [4, 5]]
+        >>> y_test = [0.8, 0.35, 0.23, 0.2]
+        >>> x_sa_test = np.array([['blue', 9], ['blue', 5], ['blue', 5], ['green', 9]])
         >>> epsilon = [0.1, 0.2]  # Fairness trade-off values for each sensitive feature
         >>> fair_predictions = wasserstein.transform(y_test, x_sa_test, epsilon=epsilon)
+        >>> print(fair_predictions)
+        [0.7015008  0.37444565 0.37204565 0.37144565]
         """
         if epsilon == None:
             epsilon = [0]*len(x_sa_test.T)
@@ -520,13 +526,17 @@ class MultiWasserStein(Wasserstein):
         Examples
         --------
         >>> wasserstein = MultiWasserStein(sigma=0.001)
-        >>> y_calib = [0, 1, 1, 0]
-        >>> x_sa_calib = np.array([['blue', 2], ['red', 9], ['green', 5], ['green', 9]])
+        >>> y_calib = np.array([0.6, 0.43, 0.32, 0.8])
+        >>> x_sa_calib = np.array([['blue', 5], ['blue', 9], ['green', 5], ['green', 9]])
         >>> wasserstein.fit(y_calib, x_sa_calib)
-        >>> y_test = [0, 1, 1, 0]
-        >>> x_sa_test = [[1, 2], [2, 3], [3, 4], [4, 5]]
+        >>> y_test = np.array([0.8, 0.35, 0.23, 0.2])
+        >>> x_sa_test = np.array([['blue', 9], ['blue', 5], ['blue', 5], ['green', 9]])
         >>> epsilon = [0.1, 0.2]  # Fairness trade-off values for each sensitive feature
         >>> fair_predictions = wasserstein.transform(y_test, x_sa_test, epsilon=epsilon)
         >>> sequential_fairness = wasserstein.get_sequential_fairness()
+        >>> print(sequential_fairness)
+        {'Base model': array([0.8 , 0.35, 0.23, 0.2 ]), 
+            'sens_var_1': array([0.71026749, 0.37278694, 0.36078694, 0.35778694]), 
+            'sens_var_2': array([0.63767235, 0.44038334, 0.43798334, 0.43738334])}
         """
         return self.y_fair_test
