@@ -1,6 +1,8 @@
 from scipy.interpolate import interp1d
 import numpy as np
 
+#WARNING:You cannot calculate the EQF function of a single value : this means that if only one individual 
+# has a specific sensitive value, you cannot use the transform function. 
 
 class EQF:
     """

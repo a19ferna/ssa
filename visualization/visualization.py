@@ -9,20 +9,50 @@ import itertools
 ## density functions##
 
 
-def viz_fairness_distrib(y_fair_test, x_ssa_test):
+def viz_fairness_distrib(y_fair_test, x_sa_test):
+    """
+    Visualizes the distribution of predictions based on different sensitive features using kernel density estimates (KDE).
+
+    Parameters:
+    - y_fair_test (dict): A dictionary containing sequentally fair output datasets.
+    - x_sa_test (array-like (shape (n_samples, n_sensitive_features)) 
+                : The test samples representing multiple sensitive attributes.
+    
+    Returns:
+    None
+
+    Raises:
+    ValueError: If the input data is not in the expected format.
+
+    Plotting Conventions:
+    - The x-axis represents prediction values, and the y-axis represents density.
+
+    Example:
+    >>> y_fair_test = {
+            'Base model': [prediction_values],
+            'sens_var_1': [prediction_values],
+            'sens_var_2': [prediction_values],
+            ...
+        }
+    >>> x_sa_test = [[sensitive_features_of_ind_1_values], [sensitive_feature_of_ind_2_values], ...]
+
+    Usage:
+    viz_fairness_distrib(y_fair_test, x_sa_test)
+    """
+
     plt.figure(figsize=(12, 9))
-    n_a = len(x_ssa_test.T)
+    n_a = len(x_sa_test.T)
     n_m = 1
 
     for key in y_fair_test.keys():
         title = None
         df_test = pd.DataFrame()
-        for i, sens in enumerate(x_ssa_test.T):
+        for i, sens in enumerate(x_sa_test.T):
             df_test[f"sensitive_feature_{i+1}"] = sens
 
         df_test['Prediction'] = y_fair_test[key]
         if key == 'Base model':
-            for i in range(len(x_ssa_test.T)):
+            for i in range(len(x_sa_test.T)):
                 title = key
                 plt.subplot(n_a, n_m + 1, i * (n_m+1) + 1)
                 modalities = df_test[f'sensitive_feature_{i+1}'].unique()
@@ -34,7 +64,7 @@ def viz_fairness_distrib(y_fair_test, x_ssa_test):
                 plt.title(title, fontsize=11)
 
         else:
-            for i in range(len(x_ssa_test.T)):
+            for i in range(len(x_sa_test.T)):
                 if key == f'sens_var_{i+1}':
                     title = key
                     plt.subplot(n_a, n_m + 1, i * (n_m+1) + 2)
@@ -309,6 +339,19 @@ class WaterfallChart():
 
 
 def waterfall_plot(unfs_list_of_dict):
+    """
+    Generate a waterfall plot to visualize fairness metrics over sequential models.
+
+    Parameters
+    ----------
+    unfs_list_of_dict : list of dict
+        List of dictionaries containing fairness metric values for each level of fairness.
+        Each dictionary represents a certain trade-off between fairness and performance.
+
+    Returns
+    -------
+    None
+    """
     unfs_list = [list(unfs.values()) for unfs in unfs_list_of_dict]
     unfs_index = len(unfs_list[0])-1
     categories = []
@@ -357,26 +400,70 @@ def waterfall_plot(unfs_list_of_dict):
 
 ## Arrow Plot ##
 
-def permutations_cols(x_ssa):
-    n = len(x_ssa[0])
+def permutations_cols(x_sa):
+    """
+    Generate permutations of columns in the input array x_sa.
+
+    Parameters:
+    - x_sa (array-like): Input array where each column represents a different sensitive feature.
+
+    Returns:
+    dict: A dictionary where keys are tuples representing permutations of column indices,
+          and values are corresponding permuted arrays of sensitive features.
+
+    Example:
+    >>> x_sa = [[1, 2], [3, 4], [5, 6]]
+    >>> permutations_cols(x_sa)
+    {(0, 1): [[1, 2], [3, 4], [5, 6]], (1, 0): [[3, 4], [1, 2], [5, 6]]}
+
+    Note:
+    This function generates all possible permutations of columns and stores them in a dictionary.
+    """
+    n = len(x_sa[0])
     ind_cols = list(range(n))
     permut_cols = list(itertools.permutations(ind_cols))
-    x_ssa_with_ind = np.vstack((ind_cols, x_ssa))
+    x_sa_with_ind = np.vstack((ind_cols, x_sa))
 
     dict_all_combs = {}
     for permutation in permut_cols:
-        permuted_x_ssa = x_ssa_with_ind[:, permutation]
+        permuted_x_sa = x_sa_with_ind[:, permutation]
         # First row as the key (converted to tuple)
-        key = tuple(permuted_x_ssa[0])
+        key = tuple(permuted_x_sa[0])
         # Other rows as values (converted to list)
-        values = permuted_x_ssa[1:].tolist()
+        values = permuted_x_sa[1:].tolist()
         dict_all_combs[key] = values
 
     return dict_all_combs
 
-def calculate_perm_wst(y_calib, x_ssa_calib, y_test, x_ssa_test, epsilon=None):
-    all_perm_calib = permutations_cols(x_ssa_calib)
-    all_perm_test = permutations_cols(x_ssa_test)
+def calculate_perm_wst(y_calib, x_sa_calib, y_test, x_sa_test, epsilon=None):
+    """
+    Calculate Wasserstein distance for different permutations of sensitive features between calibration and test sets.
+    
+    Parameters:
+    - y_calib (array-like): Calibration set predictions.
+    - x_sa_calib (array-like): Calibration set sensitive features.
+    - y_test (array-like): Test set predictions.
+    - x_sa_test (array-like): Test set sensitive features.
+    - epsilon (array-like or None, optional): Fairness constraints. Defaults to None.
+
+    Returns:
+    dict: A dictionary where keys are tuples representing permutations of column indices,
+          and values are corresponding sequential fairness values for each permutation.
+
+    Example:
+    >>> y_calib = [1, 2, 3]
+    >>> x_sa_calib = [[1, 2], [3, 4], [5, 6]]
+    >>> y_test = [4, 5, 6]
+    >>> x_sa_test = [[7, 8], [9, 10], [11, 12]]
+    >>> calculate_perm_wst(y_calib, x_sa_calib, y_test, x_sa_test)
+    {(0, 1): {'Base model': 0.5, 'sens_var_1': 0.2}, (1, 0): {'Base model': 0.3, 'sens_var_0': 0.6}}
+
+    Note:
+    This function calculates Wasserstein distance for different permutations of sensitive features
+    between calibration and test sets and stores the sequential fairness values in a dictionary.
+    """
+    all_perm_calib = permutations_cols(x_sa_calib)
+    all_perm_test = permutations_cols(x_sa_test)
     if epsilon != None:
         all_perm_epsilon = permutations_cols(np.array([np.array(epsilon).T]))
         for key in all_perm_epsilon.keys():
@@ -401,6 +488,27 @@ def calculate_perm_wst(y_calib, x_ssa_calib, y_test, x_ssa_test, epsilon=None):
 
 
 def arrow_plot(unfs_dict, risks_dict, permutations=False, base_model=True, final_model=True):
+    """
+    Generates an arrow plot representing the fairness-risk combinations for each level of fairness.
+
+    Parameters:
+    - unfs_dict (dict): A dictionary containing unfairness values associated to the sequentally fair output datasets.
+    - risks_dict (dict): A dictionary containing risk values associated to the sequentally fair output datasets.
+    - permutations (bool, optional): If True, displays permutations of arrows based on input dictionaries.
+                                     Defaults to False.
+    - base_model (bool, optional): If True, includes the base model arrow. Defaults to True.
+    - final_model (bool, optional): If True, includes the final model arrow. Defaults to True.
+
+    Returns:
+    None
+
+    Plotting Conventions:
+    - Arrows represent different fairness-risk combinations.
+    - Axes are labeled for unfairness (x-axis) and risk (y-axis).
+
+    Note:
+    - This function uses global variable `ax` for plotting, ensuring compatibility with external code.
+    """
     x = []
     y = []
     sens = [0]
@@ -455,6 +563,26 @@ def arrow_plot(unfs_dict, risks_dict, permutations=False, base_model=True, final
 
 
 def arrow_plot_permutations(unfs_list, risk_list):
+    """
+    Plot arrows representing the fairness-risk combinations for each level of fairness for all permutations (order of sensitive variables which with fairness is calculate).
+
+    Parameters:
+    - unfs_list (list): A list of dictionaries containing unfairness values for each permutation of fair output datasets.
+    - risk_list (list): A list of dictionaries containing risk values for each permutation of fair output datasets.
+
+    Returns:
+    None
+
+    Plotting Conventions:
+    - Arrows represent different fairness-risk combinations for each scenario in the input lists.
+    - Axes are labeled for unfairness (x-axis) and risk (y-axis).
+
+    Example Usage:
+    >>> arrow_plot_permutations(unfs_list, risk_list)
+
+    Note:
+    - This function uses global variable `ax` for plotting, ensuring compatibility with external code.
+    """
     global ax
     fig, ax = plt.subplots()
     for i in range(len(unfs_list)):
